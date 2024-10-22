@@ -118,6 +118,23 @@ export class RestAPIStack extends cdk.Stack {
           "POST",
           new apig.LambdaIntegration(newMovieFn, { proxy: true })
         );
+
+        const deleteMovieLambda = new lambdanode.NodejsFunction(this, 'DeleteMovieLambda', {
+          architecture: lambda.Architecture.ARM_64,
+          runtime: lambda.Runtime.NODEJS_18_X,  
+          entry: `${__dirname}/../lambdas/deleteMovie.ts`,  
+          timeout: cdk.Duration.seconds(10),
+          memorySize: 128,
+          environment: {
+            TABLE_NAME: moviesTable.tableName,
+            REGION: "eu-west-1",
+          },
+        });
+        
+        moviesTable.grantWriteData(deleteMovieLambda);
+        
+        movieEndpoint.addMethod('DELETE', new apig.LambdaIntegration(deleteMovieLambda, { proxy: true }));
+      
       }
     }
     
