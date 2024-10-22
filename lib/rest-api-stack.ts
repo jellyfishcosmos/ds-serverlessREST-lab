@@ -90,16 +90,15 @@ export class RestAPIStack extends cdk.Stack {
             parameters: {
               RequestItems: {
                 [moviesTable.tableName]: generateBatch(movies),
-                [movieCastsTable.tableName]: generateBatch(movieCasts),  // Added
-              },
-            },
-            physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
+            [movieCastsTable.tableName]: generateBatch(movieCasts),  // Added
           },
-          policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
-            resources: [moviesTable.tableArn, movieCastsTable.tableArn],  // Includes movie cast
-          }),
-        });
-        
+        },
+        physicalResourceId: custom.PhysicalResourceId.of("moviesddbInitData"), //.of(Date.now().toString()),
+      },
+      policy: custom.AwsCustomResourcePolicy.fromSdkCalls({
+        resources: [moviesTable.tableArn, movieCastsTable.tableArn],  // Includes movie cast
+      }),
+    });
         // Permissions 
         moviesTable.grantReadData(getMovieByIdFn)
         moviesTable.grantReadData(getAllMoviesFn)
@@ -119,11 +118,7 @@ export class RestAPIStack extends cdk.Stack {
           },
         });
     
-        const movieCastEndpoint = moviesEndpoint.addResource("cast");
-movieCastEndpoint.addMethod(
-    "GET",
-    new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
-);
+        
         const moviesEndpoint = api.root.addResource("movies");
         moviesEndpoint.addMethod(
           "GET",
@@ -165,6 +160,12 @@ movieCastEndpoint.addMethod(
             REGION: "eu-west-1",
           },
         });
+
+        const movieCastEndpoint = moviesEndpoint.addResource("cast");
+movieCastEndpoint.addMethod(
+    "GET",
+    new apig.LambdaIntegration(getMovieCastMembersFn, { proxy: true })
+);
         
         moviesTable.grantWriteData(deleteMovieLambda);
         

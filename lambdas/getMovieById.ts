@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { movieCasts } from '../seed/movies';
 
 const ddbDocClient = createDDbDocClient();
 
@@ -19,6 +20,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {try{
         body: JSON.stringify({ Message: "Missing movie Id" }),
       };
     }
+    const castIncluded = event.queryStringParameters?.cast === 'true';
 
     const commandOutput = await ddbDocClient.send(
       new GetCommand({
@@ -39,6 +41,13 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {try{
     const body = {
       data: commandOutput.Item,
     };
+    let responseBody = { data: commandOutput.Item };
+    
+    if (castIncluded) {
+      const cast = getMovieCastMember(movieId);
+      responseBody.data.cast = cast;
+    }
+
 
     // Return Response
     return {
@@ -46,7 +55,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {try{
       headers: {
         "content-type": "application/json",
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(responseBody),
     };
   } catch (error: any) {
     console.log(JSON.stringify(error));
@@ -72,4 +81,8 @@ function createDDbDocClient() {
   };
   const translateConfig = { marshallOptions, unmarshallOptions };
   return DynamoDBDocumentClient.from(ddbClient, translateConfig);
+}
+function getMovieCastMember(movieId: number) {
+  
+  return movieCasts.filter(cast => cast.movieId === movieId);
 }
